@@ -114,7 +114,9 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
                         // don't attempt to send them push messages anymore
 
                         // We have a subscription, so call unsubscribe on it
-                        return subscription.unsubscribe();
+                        return subscription.unsubscribe().then(function(success){
+                            return {subscription: subscription, unsubscribed: success};
+                        });
                         // .catch(function(e) {
                         //     // We failed to unsubscribe, this can lead to
                         //     // an unusual state, so may be best to remove
