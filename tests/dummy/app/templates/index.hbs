@@ -1,0 +1,27 @@
+<header>
+    <h1>Google Cloud Messaging Push Notifications</h1>
+</header>
+
+<section class="notification-toggle">
+    <div class="notification-label">{{#if notificationsEnabled}}Disable{{else}}Enable{{/if}} Push Notifications</div>
+    <div class="switch" data-on="on" data-off="off">
+        <div class="container">
+            {{input id="switch" type="checkbox" checked=notificationsEnabled}}
+            <label for="switch" class="label"></label>
+        </div>
+    </div>
+</section>
+
+{{#if notificationsEnabled}}
+    <section class="notifications-enabled">
+        <a {{action 'push-notification'}} class="static-notification"> Push a static notification </a>
+
+        <p>Copy and paste the following cURL command into your terminal to send a push message to your browser</p>
+
+        <div class="curl">
+            <div>
+                curl --header "Authorization: key=AIzaSyAPManVFkm5n8P4SOQAqwZDOJBSl7Sopo4" --header "Content-Type: application/json" https://android.googleapis.com/gcm/send -d "{\"registration_ids\":[\"{{subscription.subscriptionId}}\"]}"
+            </div>
+        </div>
+    </section>
+{{/if}}

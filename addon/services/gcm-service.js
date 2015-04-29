@@ -2,47 +2,38 @@ import Ember from 'ember';
 
 const {
     computed,
-    getWithDefault,
-    merge,
     get: get,
-        set: set,
-        A: emberArray,
-        keys: objectKeys,
-        on
+    set: set,
+    isNone: isNone
 } = Ember;
 
 export default Ember.Service.extend(Ember.TargetActionSupport, {
-    initializer: null,
+    serviceWorker: null,
+    isRegistered: computed('_serviceWorkerRegistration', function() {
+        return !isNone(get(this, '_serviceWorkerRegistration'));
+    }).readOnly(),
 
-    init: function() {
-        this._registerServiceWorker();
-        this._super.apply(this, arguments);
-    },
-
-    reInitialize: function() {
-        this._registerServiceWorker();
-        return get(this, 'initializer');
-    },
-
+    // Private
+    _serviceWorkerRegistration: null,
     _serviceWorkerAvailable: computed(function() {
         return 'serviceWorker' in navigator;
     }).readOnly(),
 
+    // Private
     _registerServiceWorker: function() {
-        var promise = null;
         if (get(this, '_serviceWorkerAvailable')) {
-            promise = navigator.serviceWorker.register('service-worker.js').then(this._initializeState.bind(this));
+            return navigator.serviceWorker.register('service-worker.js').then(this._initializeState.bind(this));
         } else {
-            promise = new Promise(function(resolve, reject) {
+            return new Promise(function(resolve, reject) {
                 reject('Service workers aren\'t supported in this browser.');
             });
         }
-
-        set(this, 'initializer', promise);
     },
 
 
-    _initializeState: function() {
+    _initializeState: function(serviceWorkerRegistration) {
+        var self = this;
+        set(this, '_serviceWorkerRegistration', serviceWorkerRegistration);
         // Are Notifications supported in the service worker?
         if (!('showNotification' in ServiceWorkerRegistration.prototype)) {
             return new Promise(function(resolve, reject) {
@@ -73,6 +64,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
         });
     },
 
+    // Public
     subscribe: function() {
         if (!get(this, '_serviceWorkerAvailable')) {
             return new Promise(function(resolve, reject) {
@@ -80,7 +72,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
             });
         }
 
-        return Ember.get(this, 'initializer').then(function() {
+        return get(this, 'serviceWorker').then(function() {
             return navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
                 return serviceWorkerRegistration.pushManager.subscribe();
             });
@@ -94,7 +86,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
             });
         }
 
-        return Ember.get(this, 'initializer').then(function() {
+        return get(this, 'serviceWorker').then(function() {
             return navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
                 // To unsubscribe from push messaging, you need get the
                 // subscription object, which you can call unsubscribe() on.
@@ -114,8 +106,11 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
                         // don't attempt to send them push messages anymore
 
                         // We have a subscription, so call unsubscribe on it
-                        return subscription.unsubscribe().then(function(success){
-                            return {subscription: subscription, unsubscribed: success};
+                        return subscription.unsubscribe().then(function(success) {
+                            return {
+                                subscription: subscription,
+                                success: success
+                            };
                         });
                         // .catch(function(e) {
                         //     // We failed to unsubscribe, this can lead to
@@ -128,6 +123,32 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
                     });
             });
         });
+    },
+
+    register: function() {
+        if (!get(this, 'isRegistered')) {
+            var serviceWorker = this._registerServiceWorker();
+            set(this, 'serviceWorker', serviceWorker);
+        }
+        return get(this, 'serviceWorker');
+    },
+
+    unregister: function() {
+        var serviceWorkerRegistration = get(this, '_serviceWorkerRegistration');
+
+        if (!isNone(serviceWorkerRegistration)) {
+            return serviceWorkerRegistration.unregister().then(function(success) {
+                if (success) {
+                    set(this, '_serviceWorkerRegistration', null);
+                }
+
+                return success;
+            }.bind(this));
+        } else {
+            return new Promise(function(resolve, reject) {
+                reject('No service worker to unregister.');
+            });
+        }
     },
 
     requestPermission: function() {
