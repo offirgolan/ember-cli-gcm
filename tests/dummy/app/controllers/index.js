@@ -4,7 +4,8 @@ const {
     computed,
     get: get,
     set: set,
-    isNone: isNone
+    isNone: isNone,
+    warn: warn
 } = Ember;
 
 export default Ember.Controller.extend({
@@ -36,7 +37,7 @@ export default Ember.Controller.extend({
 
         }, function(message) {
             set(self, 'notificationsEnabled', false);
-            console.warn(message);
+            warn(message);
         });
     },
 
@@ -69,7 +70,7 @@ export default Ember.Controller.extend({
                 // means we failed to subscribe and the user will need
                 // to manually change the notification permission to
                 // subscribe to push messages
-                console.warn('Permission for Notifications was denied');
+                warn('Permission for Notifications was denied');
             } else {
                 // A problem occurred with the subscription; common reasons
                 // include network errors, and lacking gcm_sender_id and/or
@@ -115,7 +116,7 @@ export default Ember.Controller.extend({
                     // Do something on click
                 };
             }, function(message) {
-                console.warn(message);
+                warn(message);
             });
 
         }

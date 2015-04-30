@@ -22,7 +22,10 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
     // Private
     _registerServiceWorker: function() {
         if (get(this, '_serviceWorkerAvailable')) {
-            return navigator.serviceWorker.register('service-worker.js').then(this._initializeState.bind(this));
+            return navigator.serviceWorker.register('service-worker.js').then(function(serviceWorkerRegistration) {
+                set(this, '_serviceWorkerRegistration', serviceWorkerRegistration);
+                return this.getSubscription();
+            }.bind(this));
         } else {
             return new Promise(function(resolve, reject) {
                 reject('Service workers aren\'t supported in this browser.');
@@ -30,10 +33,8 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
         }
     },
 
-
-    _initializeState: function(serviceWorkerRegistration) {
-        var self = this;
-        set(this, '_serviceWorkerRegistration', serviceWorkerRegistration);
+    // Public
+    getSubscription: function() {
         // Are Notifications supported in the service worker?
         if (!('showNotification' in ServiceWorkerRegistration.prototype)) {
             return new Promise(function(resolve, reject) {
@@ -64,7 +65,6 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
         });
     },
 
-    // Public
     subscribe: function() {
         if (!get(this, '_serviceWorkerAvailable')) {
             return new Promise(function(resolve, reject) {
@@ -87,42 +87,20 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
         }
 
         return get(this, 'serviceWorker').then(function() {
-            return navigator.serviceWorker.ready.then(function(serviceWorkerRegistration) {
-                // To unsubscribe from push messaging, you need get the
-                // subscription object, which you can call unsubscribe() on.
-                return serviceWorkerRegistration.pushManager.getSubscription()
-                    .then(function(subscription) {
-                        // Check we have a subscription to unsubscribe
-                        if (!subscription) {
-                            // No subscription object, so set the state
-                            // to allow the user to subscribe to push
-                            return new Promise(function(resolve, reject) {
-                                reject('No subscription found.');
-                            });
-                        }
-
-                        // TODO: Make a request to your server to remove
-                        // the subscriptionId from your data store so you
-                        // don't attempt to send them push messages anymore
-
-                        // We have a subscription, so call unsubscribe on it
-                        return subscription.unsubscribe().then(function(success) {
-                            return {
-                                subscription: subscription,
-                                success: success
-                            };
-                        });
-                        // .catch(function(e) {
-                        //     // We failed to unsubscribe, this can lead to
-                        //     // an unusual state, so may be best to remove
-                        //     // the users data from your data store and
-                        //     // inform the user that you have done so
-
-                        //     console.log('Unsubscription error: ', e);
-                        // });
+            return this.getSubscription().then(function(subscription) {
+                if (!subscription) {
+                    return new Promise(function(resolve, reject) {
+                        reject('No subscription found.');
                     });
+                }
+                return subscription.unsubscribe().then(function(success) {
+                    return {
+                        subscription: subscription,
+                        success: success
+                    };
+                });
             });
-        });
+        }.bind(this));
     },
 
     register: function() {
