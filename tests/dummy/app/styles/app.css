@@ -95,11 +95,11 @@ header h1 {
 
 #switch:checked:before {
     left: 90px;
-    box-shadow: inset 0 0 0 0 #3492E6, 0 0 5px 0 #000;
+    box-shadow: inset 0 0 0 0 #3492E6, 0 0 2px 0 #000;
 }
 
 #switch:checked + label {
-    box-shadow: inset 0 0 0 0 #4a4a4a;
+    box-shadow: inset 0 0px 10px 0 #4A5E6C;
 }
 
 .notifications-enabled {

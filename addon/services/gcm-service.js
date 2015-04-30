@@ -27,7 +27,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
                 return this.getSubscription();
             }.bind(this));
         } else {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('Service workers aren\'t supported in this browser.');
             });
         }
@@ -37,7 +37,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
     getSubscription: function() {
         // Are Notifications supported in the service worker?
         if (!('showNotification' in ServiceWorkerRegistration.prototype)) {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('Notifications aren\'t supported.');
             });
         }
@@ -46,14 +46,14 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
         // If its denied, it's a permanent block until the
         // user changes the permission
         if (Notification.permission === 'denied') {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('The user has blocked notifications.');
             });
         }
 
         // Check if push messaging is supported
         if (!('PushManager' in window)) {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('Push messaging isn\'t supported.');
             });
         }
@@ -67,7 +67,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
 
     subscribe: function() {
         if (!get(this, '_serviceWorkerAvailable')) {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('Service workers aren\'t supported in this browser.');
             });
         }
@@ -81,7 +81,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
 
     unsubscribe: function() {
         if (!get(this, '_serviceWorkerAvailable')) {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('Service workers aren\'t supported in this browser.');
             });
         }
@@ -89,7 +89,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
         return get(this, 'serviceWorker').then(function() {
             return this.getSubscription().then(function(subscription) {
                 if (!subscription) {
-                    return new Promise(function(resolve, reject) {
+                    return new Ember.RSVP.Promise(function(resolve, reject) {
                         reject('No subscription found.');
                     });
                 }
@@ -123,7 +123,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
                 return success;
             }.bind(this));
         } else {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('No service worker to unregister.');
             });
         }
@@ -131,7 +131,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
 
     requestPermission: function() {
         if (Notification) {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 Notification.requestPermission(function(status) {
                     if (status !== 'granted') {
                         reject(status);
@@ -140,7 +140,7 @@ export default Ember.Service.extend(Ember.TargetActionSupport, {
                 });
             });
         } else {
-            return new Promise(function(resolve, reject) {
+            return new Ember.RSVP.Promise(function(resolve, reject) {
                 reject('Notifications aren\'t supported.');
             });
         }
